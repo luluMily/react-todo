@@ -8,7 +8,7 @@ const Logout = props => {
     // 2. Set the user in state to be equal to null.
     props.setUser(null)
   };
-  return <button onClick={logout}>Logout</button>;
+  return <button className="logout-button" onClick={logout}>Logout</button>;
 };
 
 export default Logout;

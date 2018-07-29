@@ -1,0 +1,24 @@
+.add-todo-form {
+    margin-top: 20px;
+}
+
+.add-todo-form input {
+    width: 195px;
+}
+
+.title {
+    display: inline-block;
+}
+
+.logout-button {
+    display: inline-block;
+    margin-left: 133px;
+}
+
+.manage-todo {
+    float: right
+}
+
+.completed-todo {
+    text-decoration: line-through
+}

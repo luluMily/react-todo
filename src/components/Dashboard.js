@@ -25,7 +25,7 @@ const getItemStyle = (isDragging, draggableStyle) => ({
   padding: grid * 2,
   margin: `0 0 ${grid}px 0`,
   // change background colour if dragging
-  background: isDragging ? 'lightgreen' : 'grey',
+  background: isDragging ? '#42b0f4' : '#fff',
   // styles we need to apply on draggbles
   ...draggableStyle
 })
@@ -33,15 +33,12 @@ const getItemStyle = (isDragging, draggableStyle) => ({
 const getListStyle = isDraggingOver => ({
   background: isDraggingOver ? 'lightblue' : 'lightgrey',
   padding: grid,
-  width: 250
+  width: 300
 })
 
 const sortTodos = (todos) => {
   return todos.sort(function (todo1, todo2) {
 
-    // Sort by votes
-    // If the first item has a higher number, move it down
-    // If the first item has a lower number, move it up
     if (todo1.index > todo2.index) return 1;
     if (todo1.index < todo2.index) return -1;
 
@@ -51,7 +48,8 @@ const sortTodos = (todos) => {
 class Dashboard extends React.Component {
   state = {
     todo: "",
-    todos: []
+    todos: [],
+    completedTodos: []
   };
   handleChange = e => {
     this.setState({
@@ -59,23 +57,7 @@ class Dashboard extends React.Component {
     });
   };
   async componentDidMount() {
-    // 1. When the dashboard loads, get the user's token
-    const token = getToken()
-    // 2. Send a GET request to /todo and pass the token to grab a list of ONLY this user's todos
-    try {
-      const res = await axios.get('todo', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      const todos = sortTodos(res.data.payload)
-
-      this.setState({todos})
-    } catch (e) {
-      console.error(e)
-    }
-    // 3. If we get a successful response, store the todos in state.
+    this.getTodos()
   }
 
   onDragEnd = (result) => {
@@ -93,20 +75,10 @@ class Dashboard extends React.Component {
     this.setState({
       todos
     })
-    this.updateIndex(todos)
+    this.updateTodos(todos)
   }
 
-  // const data = { 'bar': 123 };
-  // const options = {
-  //   method: 'POST',
-  //   headers: { 'content-type': 'application/x-www-form-urlencoded' },
-  //   data: qs.stringify(data),
-  //   url,
-  // };
-  // axios(options);
-
-  updateIndex = async todos => {
-    debugger;
+  updateTodos = async todos => {
     const token = getToken()
 
     const options = {
@@ -118,13 +90,7 @@ class Dashboard extends React.Component {
 
     try {
       const res = axios(options);
-      // const res = await axios.put('/todo', 
-      // todos
-      // , {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`
-      //   }
-      // })
+      this.getTodos()
     } catch (e) {
       console.error(e)
     }
@@ -141,7 +107,8 @@ class Dashboard extends React.Component {
       const res = await axios.post('/todo', 
       { 
         description: todo,
-        index: this.state.todos.length
+        index: this.state.todos.length,
+        completed: false
       }, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -152,30 +119,72 @@ class Dashboard extends React.Component {
     } catch (e) {
       console.error(e)
     }
-    //  a - the body containing the TODO we wish to post
-    //  b - the Authorization Header Bearer <token>
   };
 
   getTodos = async () => {
     const token = getToken()
-
     try {
-      const res = await axios.get('/todo', {
+      const res = await axios.get('todo', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       })
-      console.log(res)
-      const todos = res.data.payload
-      this.setState({ todos })
+      
+      let uncompletedTodos = []
+      let completedTodos = []
+      
+      res.data.payload.forEach((todo) => {
+        if (todo.completed) {
+          completedTodos.push(todo)
+        } else {
+          uncompletedTodos.push(todo)
+        }
+      })
+
+      const sortedTodos = sortTodos(uncompletedTodos)
+
+      this.setState({
+        todos: sortedTodos,
+        completedTodos: completedTodos
+      })
     } catch (e) {
       console.error(e)
     }
   }
+
+  completeTodo = async (todo) => {
+    const token = getToken()
+    const todos = Array.from(this.state.todos)
+
+    const newTodo = {
+      _id: todo._id,
+      description: todo.description,
+      index: -1,
+      completed: true,
+      user: todo._user
+    }
+    
+    todos.splice(todo.index, 1)
+
+    const orderedResult = todos.map((todo) => {
+      let indexInArray = todos.findIndex(i => i._id === todo._id)
+      todo.index = indexInArray
+      return todo
+    })
+
+    orderedResult.push(newTodo)
+
+    this.updateTodos(orderedResult)
+  }
+
   render() {
     return (
       <div>
-        <h1>Dashboard</h1>
+        <div>
+          <h1 className="title">Todo List</h1>
+          <Logout setUser={this.props.setUser} />
+        </div>
+
         <DragDropContext onDragEnd={this.onDragEnd}>
           <Droppable droppableId="droppable">
             {(provided, snapshot) => (
@@ -196,6 +205,10 @@ class Dashboard extends React.Component {
                         )}
                       >
                         {todo.description}
+                        <div className="manage-todo">
+                          <button className="complete-todo-button" onClick={() => this.completeTodo(todo)}>Done</button>
+                          {/* <button className="delete-todo-button" onClick={() => this.deleteTodo(todo)}>Delete</button> */}
+                        </div>
                       </div>
                     )}
                   </Draggable>
@@ -205,16 +218,17 @@ class Dashboard extends React.Component {
             )}
           </Droppable>
         </DragDropContext>
-        <form onSubmit={this.handleSubmit}>
+        <form className="add-todo-form" onSubmit={this.handleSubmit}>
           <input name="todo" type="text" onChange={this.handleChange} />
           <button>Add Todo</button>
         </form>
-        {/* <ul>
-          {this.state.todos.map(todo => {
-            return <li>{JSON.stringify(todo, null, 3)}</li>;
+        
+        <ul>
+          {this.state.completedTodos.map(todo => {
+            return <li className="completed-todo" key={todo._id}>{todo.description}</li>;
           })}
-        </ul> */}
-        <Logout setUser={this.props.setUser} />
+        </ul>
+
       </div>
     );
   }
