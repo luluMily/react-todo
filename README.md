@@ -1,10 +1,10 @@
-# react-express-boilerplate
+# xiaolu-todo
 
 This is an example of how to construct a simple react and express boilerplate. There are advantages and disadvantages to this particular approach which we'll discuss in class, but this is the quickest way to get started and organized on a small React/Express project.
 
 If you plan to expand to larger projects, I would recommend splitting your application into two separate repositories: one for your express server, and one for your react app.
 
-1. `create-react-app react-express-boilerplate && cd react-express-boilerplate`
+1. `create-react-app xiaolu-todo && cd xiaolu-todo`
 
 2. `mkdir lib`
 
@@ -39,7 +39,7 @@ app.listen(PORT, () => {
 
 ```json
 {
-  "name": "react-express-boilerplate",
+  "name": "xiaolu-todo",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
